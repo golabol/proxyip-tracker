@@ -5,19 +5,14 @@ import zipfile
 from pathlib import Path
 import argparse
 
-def clear_file(file_path):
-    """Clear a file if it exists."""
-    if os.path.isfile(file_path):
-        os.remove(file_path)
-
 def clear_directory(dir_path):
     """Clear a directory if it exists."""
     if os.path.exists(dir_path):
         shutil.rmtree(dir_path)
 
-def download_file(url, dest):
+def download_file(curl_path, url, dest):
     """Download a file using curl."""
-    subprocess.run(["curl", "-#", url, "-o", dest], check=True)
+    subprocess.run([f"{curl_path}", "-#", url, "-o", dest], check=True)
 
 def extract_zip(file_path, extract_to):
     """Extract a ZIP file."""
@@ -35,10 +30,10 @@ def combine_files(input_files, output_file):
             with open(file_path, 'r') as infile:
                 shutil.copyfileobj(infile, outfile)
 
-def run_iptest(input_file, port, tls_mode, max_processes, output_file, speed_test_threads):
+def run_iptest(iptest_path, input_file, port, tls_mode, max_processes, output_file, speed_test_threads):
     """Run iptest with given parameters."""
     iptest_command = [
-        "./iptest.exe",
+        f"{iptest_path}",
         f"-file={input_file}",
         f"-port={port}",
         f"-tls=true",
@@ -64,13 +59,14 @@ def main(
     current_dir = Path(__file__).parent
     txt_dir_path = current_dir / txt_dir
     txt_zip_path = current_dir / txt_zip
+    iptest_path = current_dir / "iptest.exe"
+    curl_path = current_dir / "curl.exe"
 
     # Setup: Clear directory and handle txt.zip
     clear_directory(txt_dir_path)
-    clear_file(txt_zip_path)
 
     print("Downloading txt.zip...")
-    download_file(zip_url, txt_zip_path)
+    download_file(curl_path, zip_url, txt_zip_path)
 
     extract_zip(txt_zip_path, txt_dir_path)
 
@@ -92,7 +88,7 @@ def main(
         input_file = input_files[0]
 
     # Run iptest with predefined inputs
-    run_iptest(input_file, port, tls_mode, max_processes, output_file, speed_test_threads)
+    run_iptest(iptest_path, input_file, port, tls_mode, max_processes, output_file, speed_test_threads)
 
     # Cleanup
     clear_directory(txt_dir_path)

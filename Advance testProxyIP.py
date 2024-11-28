@@ -10,9 +10,9 @@ def clear_directory(dir_path):
     if os.path.exists(dir_path):
         shutil.rmtree(dir_path)
 
-def download_file(url, dest):
+def download_file(curl_path, url, dest):
     """Download a file using curl."""
-    subprocess.run(["curl", "-#", url, "-o", dest], check=True)
+    subprocess.run([f"{curl_path}", "-#", url, "-o", dest], check=True)
 
 def extract_zip(file_path, extract_to):
     """Extract a ZIP file."""
@@ -32,16 +32,19 @@ def list_txt_files(directory, pattern=""):
 current_dir = Path(__file__).parent
 txt_dir = current_dir / "txt"
 txt_zip = current_dir / "txt.zip"
+iptest_path = current_dir / "iptest.exe"
+curl_path = current_dir / "curl.exe"
+
 clear_directory(txt_dir)
 
 # Download and update txt.zip if necessary
 if txt_zip.exists():
     update_zip = get_user_input("Update local txt.zip data? 0: No update, 1: Update", "0")
     if update_zip == "1":
-        download_file("https://zip.baipiao.eu.org", txt_zip)
+        download_file(curl_path, "https://zip.baipiao.eu.org", txt_zip)
 else:
     print("Downloading txt.zip...")
-    download_file("https://zip.baipiao.eu.org", txt_zip)
+    download_file(curl_path, "https://zip.baipiao.eu.org", txt_zip)
 
 # Extract the ZIP file
 extract_zip(txt_zip, txt_dir)
@@ -92,7 +95,7 @@ while True:
 
     # Run the iptest command
     iptest_command = [
-        "iptest",
+        f"{iptest_path}",
         f"-file={txt_dir / ip_file}",
         f"-port={port}",
         f"-tls={'true' if tls_mode == '1' else 'false'}",
@@ -119,7 +122,7 @@ while True:
                 f.write("\n".join(sorted_ips))
 
             subprocess.run([
-                "iptest",
+                f"{iptest_path}",
                 f"-file={temp_file}",
                 f"-port={port}",
                 f"-tls={'true' if tls_mode == '1' else 'false'}",
