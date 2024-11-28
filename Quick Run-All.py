@@ -27,12 +27,16 @@ def run_all():
     new_record = " ".join(ip_addresses)  # Space-separated IPs
     logger.debug(f"New record value: {new_record}")
 
-
     # 3. Run cfRecUpdate.py using the filtered IPs
-    logger.info("Running cfRecUpdate.py...")
-    zone_id = "9beb5015914f54232f821ab594fdd4b7"
-    record_name = "dev.ip.proxy.farelra.my.id"
-    record_type = "A"
+    # Get zone_id and record_name from environment variables
+    zone_id = os.environ.get("CLOUDFLARE_ZONE_ID")
+    record_name = os.environ.get("CLOUDFLARE_RECORD_NAME")
+
+    if not zone_id or not record_name:
+        logger.critical("CLOUDFLARE_ZONE_ID or CLOUDFLARE_RECORD_NAME environment variable not set.")
+        raise ValueError("Please set the required environment variables.")
+
+    record_type = "A"  # Remains hardcoded as it's unlikely to change
 
     # Get API token (prefer environment variable, then optional file)
     api_token = os.getenv('CLOUDFLARE_API_TOKEN')
