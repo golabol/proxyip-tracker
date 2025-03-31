@@ -190,7 +190,7 @@ class CloudflareIPTester:
             response.raise_for_status()
 
             for line in response.text.splitlines():
-                if line.startswith("colo="):
+                if line.startswith("loc="):
                     return line.split("=")[1]
         except requests.RequestException as e:
             logging.error(f"Error fetching colo for IP {ip}: {e}")
@@ -206,7 +206,7 @@ class CloudflareIPTester:
         :return: Region name
         """
         for row in colo_data:
-            if str(row.get('colo')).lower() == colo.lower():
+            if str(row.get('cca2')).lower() == colo.lower():
                 return row.get('name', 'Unknown').replace(", ", "_")
         return "Unknown"
 
