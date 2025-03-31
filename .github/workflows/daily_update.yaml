@@ -31,11 +31,6 @@ jobs:
       - name: Map the IPs with domain names
         run: python "scripts/mapDomain.py"
 
-      - name: Update upstream DNS record
-        run: python "scripts/cfRecUpdate.py"
-        env: 
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-
       - name: Configure Git
         run: |
           git config --global user.name "GitHub Actions"
