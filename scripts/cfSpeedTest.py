@@ -206,8 +206,8 @@ class CloudflareIPTester:
         :return: Region name
         """
         for row in colo_data:
-            if row.get('colo') == colo:
-                return row.get('region', 'Unknown').replace(" ", "_")
+            if str(row.get('colo')).lower() == colo.lower():
+                return row.get('name', 'Unknown').replace(", ", "_")
         return "Unknown"
 
     def get_ping(self, ip: str) -> int:
