@@ -347,7 +347,7 @@ class CloudflareIPTester:
             # colo = self.get_colo_from_ip(ip)
             
             # region = self.get_region_from_colo(colo, colo_data)
-            colo, region = get_country_from_ip(ip)
+            colo, region = self.get_country_from_ip(ip)
             if not colo:
                 return None, None
             logging.info(f"IP: {ip}; Colo: {colo}; Region: {region}")
