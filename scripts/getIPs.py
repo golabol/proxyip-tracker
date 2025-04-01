@@ -135,17 +135,20 @@ def get_country_based_ips():
         try:
             response = requests.get(base_url + con)
             response.raise_for_status()
-            for line in response.text.split('\n'):
-                ip, port = line.split('|')[0].strip().split(':')
-                if ip not in added_ips:
-                    location_ips_data.update({
-                        'ip': ip,
-                        'port': int(port),
-                        'country': con
-                    })
-                    added_ips.add(ip)
+            if response.text:
+                for line in response.text.split('\n'):
+                    ip, port = line.split('|')[0].strip().split(':')
+                    if ip not in added_ips:
+                        location_ips_data.update({
+                            'ip': ip,
+                            'port': int(port),
+                            'country': con
+                        })
+                        added_ips.add(ip)
         except requests.exceptions.RequestException as e:
             raise SystemExit(f"Error during access to {base_url+con}: {e}")
+        except Exception as e:
+            print(f"Error during parsing '{base_url+con}' content: {e}")
     return location_ips_data
 
 def process_zip_file(url, file_pattern, output_file):
