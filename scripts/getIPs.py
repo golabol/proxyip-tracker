@@ -116,7 +116,7 @@ def extract_and_combine_files(zip_file, file_pattern):
             for line in lines:
                 ip = line.strip()
                 if ip and ip not in added_ips:
-                    combined_content.append({'ip': ip, 'asn': asn, 'tls': True if tls == '1' else False, 'port': int(port)})
+                    combined_content.append({'ip': ip, 'asn': asn, 'tls': 'YES' if tls == '1' else 'NO', 'port': int(port)})
                     added_ips.add(ip)
 
     return combined_content
@@ -164,7 +164,7 @@ def process_zip_file(url, file_pattern, output_file):
             combined_content.append({
                 'ip': item.get('ip'),
                 'asn': None,
-                'tls': 'YES' if item.get('port') in tls_ports else 'No' if item.get('port') in nontls_ports else 'Unknown',
+                'tls': 'YES' if item.get('port') in tls_ports else 'NO' if item.get('port') in nontls_ports else 'Unknown',
                 'port': item.get('port'),
             })
         print("Saving combined content to file...")
