@@ -47,6 +47,9 @@ class IPPerformanceMetrics:
     ping: int
     upload_speed: float
     download_speed: float
+    port: int
+    tls: bool
+    asn: str
 
     def to_csv_row(self) -> List[str]:
         """Convert metrics to CSV row format."""
@@ -55,7 +58,10 @@ class IPPerformanceMetrics:
             self.region,
             str(self.ping),
             f"{self.upload_speed:.2f}",
-            f"{self.download_speed:.2f}"
+            f"{self.download_speed:.2f}",
+            self.port,
+            self.tls,
+            self.asn
         ]
 
 class CloudflareIPTester:
@@ -125,11 +131,14 @@ class CloudflareIPTester:
         :return: List of valid IP addresses
         """
         try:
+            ips = []
             with open(file_path, 'r') as file:
-                ips = [
-                    ip.strip() for ip in file
-                    if ip.strip() and CloudflareIPTester.validate_ip(ip.strip())
-                ]
+                ips_list = json.load(file)
+                ips = list(
+                    filter(
+                        lambda ip_obj: ip_obj.get('ip') and CloudflareIPTester.validate_ip(ip_obj.get('ip')), ips_list
+                    )
+                )
 
             if not ips:
                 raise ValueError("No valid IP addresses found in the file")
@@ -399,10 +408,12 @@ class CloudflareIPTester:
         """
         # Read and shuffle IPs
         try:
-            ip_list = self.read_ips(self.ip_file)
-            random.shuffle(ip_list)
+            ip_obj_list = self.read_ips(self.ip_file)
+            random.shuffle(ip_obj_list)
         except Exception as e:
             raise ValueError(f"Failed to read 'ip_list': {e}")
+
+        ip_list = list(map(lambda x: x.get('ip'), ip_obj_list))
 
         # download mmdb
         url = 'https://raw.githubusercontent.com/Loyalsoldier/geoip/release/Country.mmdb'
@@ -443,12 +454,16 @@ class CloudflareIPTester:
                         continue
 
                     # Save successful metrics
+                    ip_obj = list(filter(lambda x: x.get('ip') == ip, ip_obj_list))
                     successful_ips.append(IPPerformanceMetrics(
                         ip=ip,
                         region=region,
                         ping=ping,
                         upload_speed=upload_speed,
-                        download_speed=download_speed
+                        download_speed=download_speed,
+                        port=ip_obj[0].get('port') if ip_obj else None,
+                        tls=ip_obj[0].get('tls') if ip_obj else None,
+                        asn=ip_obj[0].get('asn') if ip_obj else None
                     ))
 
                 except Exception as e:
@@ -466,7 +481,7 @@ class CloudflareIPTester:
             with open(self.output_file, 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 # Write headers
-                writer.writerow(['IP', 'Region', 'Ping (ms)', 'Upload (Mbps)', 'Download (Mbps)'])
+                writer.writerow(['IP', 'Region', 'Ping (ms)', 'Upload (Mbps)', 'Download (Mbps)', 'Port', 'TLS', 'ASN'])
 
                 # Write results
                 for result in results:
