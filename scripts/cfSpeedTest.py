@@ -51,6 +51,7 @@ class IPPerformanceMetrics:
     port: int
     tls: bool
     asn: str
+    asn_name: str
 
     def to_csv_row(self) -> List[str]:
         """Convert metrics to CSV row format."""
@@ -62,7 +63,8 @@ class IPPerformanceMetrics:
             f"{self.download_speed:.2f}",
             self.port,
             self.tls,
-            self.asn
+            self.asn,
+            self.asn_name
         ]
 
 class CloudflareIPTester:
@@ -208,7 +210,7 @@ class CloudflareIPTester:
 
     #     return None
 
-    def get_country_from_ip(self, ip: str) -> Optional[str]:
+    def get_country_from_ip(self, ip: str, geo_db_path: str) -> Optional[str]:
         """
         Fetch the colo code for a given IP address.
 
@@ -216,18 +218,22 @@ class CloudflareIPTester:
         :return: Colo code or None
         """
         try:
-            with geoip2.database.Reader('./Country.mmdb') as ip_reader:
-                try:
-                    response = ip_reader.country(ip)
-                    country_code = response.country.iso_code
-                    country_name = response.country.name
-                    return country_code, country_name
-                except Exception:
-                    return None, None
+            geoip = GeoIP2Fast()
+            geoip = GeoIP2Fast(geoip2fast_data_file=geo_db_path)
+            if geo_data := geoip.lookup(ip):
+                return geo_data.get('country_code'), geo_data.get('country_name'), geo_data.get('asn_name')
+            # with geoip2.database.Reader('./Country.mmdb') as ip_reader:
+            #     try:
+            #         response = ip_reader.country(ip)
+            #         country_code = response.country.iso_code
+            #         country_name = response.country.name
+            #         return country_code, country_name
+            #     except Exception:
+            #         return None, None
         except requests.RequestException as e:
             logging.error(f"Error fetching colo for IP {ip}: {e}")
 
-        return None, None
+        return None, None, None
 
     def get_ping(self, ip: str) -> int:
         """
@@ -334,7 +340,7 @@ class CloudflareIPTester:
         except requests.RequestException:
             return 0.0
 
-    def map_ips_to_regions(self, ip_list: List[str]) -> Dict[str, List[str]]:
+    def map_ips_to_regions(self, ip_list: List[str], geo_db_path: str) -> Dict[str, List[str]]:
         """
         Map IPs to their corresponding regions using multithreading.
 
@@ -347,29 +353,31 @@ class CloudflareIPTester:
             raise RuntimeError("Critical error: Failed to fetch Cloudflare colo data.")
 
         region_ip_map = {}
+        ip_to_asn_name_map = {}
 
         def process_ip(ip):
             # colo = self.get_colo_from_ip(ip)
             
             # region = self.get_region_from_colo(colo, colo_data)
-            colo, region = self.get_country_from_ip(ip)
+            colo, region, asn_name = self.get_country_from_ip(ip, geo_db_path)
             if not colo:
                 return None, None
-            logging.info(f"IP: {ip}; Colo: {colo}; Region: {region}")
-            return region, ip
+            logging.info(f"IP: {ip}; Colo: {colo}; Region: {region}; ASN Name: {asn_name}")
+            return region, ip, asn_name
 
         with ThreadPoolExecutor(max_workers=20) as executor:
             future_to_ip = {executor.submit(process_ip, ip): ip for ip in ip_list}
 
             for future in as_completed(future_to_ip):
                 try:
-                    region, ip = future.result()
+                    region, ip, asn_name = future.result()
                     if region and ip:
                         region_ip_map.setdefault(region, []).append(ip)
+                        ip_to_asn_name_map.setdefault(ip, asn_name)
                 except Exception as e:
                     logging.error(f"Error processing IP {future_to_ip[future]}: {e}")
 
-        return region_ip_map
+        return region_ip_map, ip_to_asn_name_map
 
     def filter_ips_by_ping(self, ip_list: List[str]) -> List[Tuple[str, int]]:
         """
@@ -417,14 +425,17 @@ class CloudflareIPTester:
         ip_list = list(map(lambda x: x.get('ip'), ip_obj_list))
 
         # download mmdb
-        url = 'https://raw.githubusercontent.com/Loyalsoldier/geoip/release/Country.mmdb'
-        response = requests.get(url)
-        with open('./Country.mmdb', 'wb') as file:
-            file.write(response.content)
+        # url = 'https://raw.githubusercontent.com/Loyalsoldier/geoip/release/Country.mmdb'
+        # response = requests.get(url)
+        # with open('./Country.mmdb', 'wb') as file:
+        #     file.write(response.content)
+        geoip = GeoIP2Fast()
+        update_result = geoip.update_file('geoip2fast-city-asn.dat.gz',verbose=False)
+        geo_db_path = update_result.get('file_destination')
 
         # Get map of corresponding region for each ip
         logging.info("Getting region for each IPs.")
-        ip_region_map = self.map_ips_to_regions(ip_list)
+        ip_region_map, ip_to_asn_name_map = self.map_ips_to_regions(ip_list, geo_db_path)
         if not ip_region_map:
             raise RuntimeError("Can not get regions of IPs")
 
@@ -464,7 +475,8 @@ class CloudflareIPTester:
                         download_speed=download_speed,
                         port=ip_obj[0].get('port') if ip_obj else None,
                         tls=ip_obj[0].get('tls') if ip_obj else None,
-                        asn=ip_obj[0].get('asn') if ip_obj else None
+                        asn=ip_obj[0].get('asn') if ip_obj else None,
+                        asn_name=ip_to_asn_name_map.get(ip)
                     ))
 
                 except Exception as e:
@@ -482,7 +494,7 @@ class CloudflareIPTester:
             with open(self.output_file, 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 # Write headers
-                writer.writerow(['IP', 'Region', 'Ping (ms)', 'Upload (Mbps)', 'Download (Mbps)', 'Port', 'TLS', 'ASN'])
+                writer.writerow(['IP', 'Region', 'Ping (ms)', 'Upload (Mbps)', 'Download (Mbps)', 'Port', 'TLS', 'ASN', 'ASN Name'])
 
                 # Write results
                 for result in results:
