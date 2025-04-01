@@ -4,6 +4,7 @@ import io
 import fnmatch
 import configparser
 import json
+import re
 
 def download_zip_file(url):
     """Download the ZIP file from the specified URL."""
