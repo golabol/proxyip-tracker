@@ -205,12 +205,14 @@ class CloudflareIPTester:
         :return: Colo code or None
         """
         try:
-            url = f"https://ipapi.co/{ip}/json/"
+            url = f"https://apiip.net/api/ip-check-public?ip={ip}"
 
             response = requests.get(url, timeout=4)
             response.raise_for_status()
 
-            return response.json().get('country_code', None)
+            time.sleep(1)
+
+            return response.json().get('data', {}).get('countryCode', None)
         except requests.RequestException as e:
             logging.error(f"Error fetching colo for IP {ip}: {e}")
 
