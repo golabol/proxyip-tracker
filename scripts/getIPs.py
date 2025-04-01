@@ -119,7 +119,7 @@ def extract_and_combine_files(zip_file, file_pattern):
                     combined_content.append({'ip': ip, 'asn': asn, 'tls': True if tls == '1' else False, 'port': int(port)})
                     added_ips.add(ip)
 
-    return json.dumps(combined_content)
+    return combined_content
 
 def save_to_file(content, output_file):
     """Save the combined content to a file."""
@@ -168,7 +168,7 @@ def process_zip_file(url, file_pattern, output_file):
                 'port': item.get('port'),
             })
         print("Saving combined content to file...")
-        save_to_file(combined_content, output_file)
+        save_to_file(json.dumps(combined_content, indent=2), output_file)
 
 def load_config(config_file):
     """Load configuration from a file."""
