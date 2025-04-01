@@ -50,7 +50,7 @@ class IPPerformanceMetrics:
     upload_speed: float
     download_speed: float
     port: int
-    tls: bool
+    tls: str
     asn: str
     asn_name: str
 
