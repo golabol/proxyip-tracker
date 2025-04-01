@@ -136,7 +136,7 @@ def get_country_based_ips():
             response = requests.get(base_url + con)
             response.raise_for_status()
             for line in response.text.split('\n'):
-                ip, port = line.split('|').strip().split(':')
+                ip, port = line.split('|')[0].strip().split(':')
                 if ip not in added_ips:
                     location_ips_data.update({
                         'ip': ip,
