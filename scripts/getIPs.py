@@ -15,17 +15,17 @@ def download_zip_file(url):
 
 def extract_and_combine_files(zip_file, file_pattern):
     """Extract and combine content of files matching the pattern."""
-    matching_files = fnmatch.filter(zip_file.namelist(), file_pattern)
-    if not matching_files:
-        raise FileNotFoundError(f"No files matching {file_pattern} found in the ZIP archive.")
+    # matching_files = fnmatch.filter(zip_file.namelist(), file_pattern)
+    # if not matching_files:
+    #     raise FileNotFoundError(f"No files matching {file_pattern} found in the ZIP archive.")
 
     combined_content = []
-    for file_name in matching_files:
+    for file_name in zip_file.namelist():
         with zip_file.open(file_name) as file:
             lines = file.read().decode('utf-8').splitlines()
             combined_content.extend(line for line in lines if line.strip())
 
-    return "\n".join(combined_content)
+    return "\n".join(list(set(combined_content)))
 
 def save_to_file(content, output_file):
     """Save the combined content to a file."""
