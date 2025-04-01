@@ -21,6 +21,7 @@ from typing import List, Dict, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import geoip2.database
 import json
+from geoip2fast import GeoIP2Fast
 
 import requests
 
