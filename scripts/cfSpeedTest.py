@@ -206,11 +206,6 @@ class CloudflareIPTester:
         :return: Colo code or None
         """
         try:
-            url = 'https://raw.githubusercontent.com/Loyalsoldier/geoip/release/Country.mmdb'
-            response = requests.get(url)
-            with open('./Country.mmdb', 'wb') as file:
-                file.write(response.content)
-            
             with geoip2.database.Reader('./Country.mmdb') as ip_reader:
                 try:
                     response = ip_reader.country(ip)
@@ -408,6 +403,12 @@ class CloudflareIPTester:
             random.shuffle(ip_list)
         except Exception as e:
             raise ValueError(f"Failed to read 'ip_list': {e}")
+
+        # download mmdb
+        url = 'https://raw.githubusercontent.com/Loyalsoldier/geoip/release/Country.mmdb'
+        response = requests.get(url)
+        with open('./Country.mmdb', 'wb') as file:
+            file.write(response.content)
 
         # Get map of corresponding region for each ip
         logging.info("Getting region for each IPs.")
