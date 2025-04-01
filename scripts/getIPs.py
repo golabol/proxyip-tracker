@@ -3,6 +3,7 @@ import zipfile
 import io
 import fnmatch
 import configparser
+import json
 
 def download_zip_file(url):
     """Download the ZIP file from the specified URL."""
@@ -20,15 +21,20 @@ def extract_and_combine_files(zip_file, file_pattern):
         raise FileNotFoundError(f"No files matching {file_pattern} found in the ZIP archive.")
 
     combined_content = []
+    added_ips = set()
     for file_name in matching_files:
         pattern = r"(\d+)-([0-1])-(\d+)\.txt"
         match = re.match(pattern, file_name)
         asn, tls, port = match.groups()
         with zip_file.open(file_name) as file:
             lines = file.read().decode('utf-8').splitlines()
-            combined_content.extend({'ip': line.strip(), 'asn': asn, 'tls': True if tls == '1' else False, 'port': int(port)} for line in lines if line.strip())
+            for line in lines:
+                ip = line.strip()
+                if ip and ip not in added_ips:
+                    combined_content.append({'ip': ip, 'asn': asn, 'tls': True if tls == '1' else False, 'port': int(port)})
+                    added_ips.add(ip)
 
-    return "\n".join(list(set(combined_content)))
+    return json.dumps(combined_content)
 
 def save_to_file(content, output_file):
     """Save the combined content to a file."""
