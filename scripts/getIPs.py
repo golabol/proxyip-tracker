@@ -72,7 +72,7 @@ countries = {
     "UZ": "Uzbekistan",
     "T1": "Unknown"
 }
-tls_port = {
+tls_ports = {
     443,
     2053,
     2083,
@@ -80,7 +80,7 @@ tls_port = {
     2096,
     8443
 }
-nontls_port = {
+nontls_ports = {
     80,
     2052,
     2082,
@@ -161,7 +161,7 @@ def process_zip_file(url, file_pattern, output_file):
             combined_content.append({
                 'ip': item.get('ip'),
                 'asn': None,
-                'tls': 'Unknown',
+                'tls': 'YES' if item.get('port') in tls_ports else 'No' if item.get('port') in nontls_ports else 'Unknown',
                 'port': item.get('port'),
             })
         print("Saving combined content to file...")
