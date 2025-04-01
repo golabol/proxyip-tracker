@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import geoip2.database
+import json
 
 import requests
 
