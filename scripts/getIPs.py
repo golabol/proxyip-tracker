@@ -21,9 +21,12 @@ def extract_and_combine_files(zip_file, file_pattern):
 
     combined_content = []
     for file_name in matching_files:
+        pattern = r"(\d+)-([0-1])-(\d+)\.txt"
+        match = re.match(pattern, file_name)
+        asn, tls, port = match.groups()
         with zip_file.open(file_name) as file:
             lines = file.read().decode('utf-8').splitlines()
-            combined_content.extend(line for line in lines if line.strip())
+            combined_content.extend({'ip': line.strip(), 'asn': asn, 'tls': True if tls == '1' else False, 'port': int(port)} for line in lines if line.strip())
 
     return "\n".join(list(set(combined_content)))
 
