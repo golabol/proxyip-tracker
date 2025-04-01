@@ -19,6 +19,7 @@ from io import StringIO
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import geoip2.database
 
 import requests
 
@@ -197,7 +198,7 @@ class CloudflareIPTester:
 
     #     return None
 
-    def get_colo_from_ip(self, ip: str) -> Optional[str]:
+    def get_country_from_ip(self, ip: str) -> Optional[str]:
         """
         Fetch the colo code for a given IP address.
 
@@ -205,31 +206,23 @@ class CloudflareIPTester:
         :return: Colo code or None
         """
         try:
-            url = f"https://apiip.net/api/ip-check-public?ip={ip}"
-
-            response = requests.get(url, timeout=4)
-            response.raise_for_status()
-
-            time.sleep(1)
-
-            return response.json().get('data', {}).get('countryCode', None)
+            url = 'https://raw.githubusercontent.com/Loyalsoldier/geoip/release/Country.mmdb'
+            response = requests.get(url)
+            with open('./Country.mmdb', 'wb') as file:
+                file.write(response.content)
+            
+            with geoip2.database.Reader('./Country.mmdb') as ip_reader:
+                try:
+                    response = ip_reader.country(ip)
+                    country_code = response.country.iso_code
+                    country_name = response.country.name
+                    return country_code, country_name
+                except Exception:
+                    return None, None
         except requests.RequestException as e:
             logging.error(f"Error fetching colo for IP {ip}: {e}")
 
-        return None
-
-    def get_region_from_colo(self, colo: str, colo_data: List[Dict[str, str]]) -> str:
-        """
-        Find region for a given colo code.
-
-        :param colo: Colo code
-        :param colo_data: List of colo data
-        :return: Region name
-        """
-        for row in colo_data:
-            if str(row.get('cca2')).lower() == colo.lower():
-                return row.get('name', 'Unknown').replace(", ", "_")
-        return "Unknown"
+        return None, None
 
     def get_ping(self, ip: str) -> int:
         """
@@ -351,10 +344,12 @@ class CloudflareIPTester:
         region_ip_map = {}
 
         def process_ip(ip):
-            colo = self.get_colo_from_ip(ip)
+            # colo = self.get_colo_from_ip(ip)
+            
+            # region = self.get_region_from_colo(colo, colo_data)
+            colo, region = get_country_from_ip(ip)
             if not colo:
                 return None, None
-            region = self.get_region_from_colo(colo, colo_data)
             logging.info(f"IP: {ip}; Colo: {colo}; Region: {region}")
             return region, ip
 
