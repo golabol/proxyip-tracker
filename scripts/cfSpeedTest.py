@@ -170,6 +170,33 @@ class CloudflareIPTester:
             logging.error(f"Error fetching Cloudflare colo data: {e}")
             return []
 
+    # def get_colo_from_ip(self, ip: str) -> Optional[str]:
+    #     """
+    #     Fetch the colo code for a given IP address.
+
+    #     :param ip: IP address to check
+    #     :return: Colo code or None
+    #     """
+    #     try:
+    #         url = f"https://speed.cloudflare.com/cdn-cgi/trace"
+    #         headers = {'Host': 'speed.cloudflare.com'}
+
+    #         params = {
+    #             'resolve': f"speed.cloudflare.com:443:{ip}",
+    #             **({"alpn": "h2,http/1.1", "utls": "random"} if self.openssl_available else {})
+    #         }
+
+    #         response = requests.get(url, headers=headers, params=params, timeout=4)
+    #         response.raise_for_status()
+
+    #         for line in response.text.splitlines():
+    #             if line.startswith("loc="):
+    #                 return line.split("=")[1]
+    #     except requests.RequestException as e:
+    #         logging.error(f"Error fetching colo for IP {ip}: {e}")
+
+    #     return None
+
     def get_colo_from_ip(self, ip: str) -> Optional[str]:
         """
         Fetch the colo code for a given IP address.
@@ -178,20 +205,12 @@ class CloudflareIPTester:
         :return: Colo code or None
         """
         try:
-            url = f"https://speed.cloudflare.com/cdn-cgi/trace"
-            headers = {'Host': 'speed.cloudflare.com'}
+            url = f"https://freeipapi.com/api/json/{ip}"
 
-            params = {
-                'resolve': f"speed.cloudflare.com:443:{ip}",
-                **({"alpn": "h2,http/1.1", "utls": "random"} if self.openssl_available else {})
-            }
-
-            response = requests.get(url, headers=headers, params=params, timeout=4)
+            response = requests.get(url, timeout=4)
             response.raise_for_status()
 
-            for line in response.text.splitlines():
-                if line.startswith("loc="):
-                    return line.split("=")[1]
+            return response.json().get('countryCode', None)
         except requests.RequestException as e:
             logging.error(f"Error fetching colo for IP {ip}: {e}")
 
