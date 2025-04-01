@@ -1,3 +1,4 @@
 requests
 ping3
 geoip2
+geoip2fast
