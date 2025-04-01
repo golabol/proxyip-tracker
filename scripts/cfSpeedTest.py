@@ -222,7 +222,7 @@ class CloudflareIPTester:
             geoip = GeoIP2Fast()
             geoip = GeoIP2Fast(geoip2fast_data_file=geo_db_path)
             if geo_data := geoip.lookup(ip):
-                return geo_data.get('country_code'), geo_data.get('country_name'), geo_data.get('asn_name')
+                return geo_data.country_code, geo_data.country_name, geo_data.asn_name
             # with geoip2.database.Reader('./Country.mmdb') as ip_reader:
             #     try:
             #         response = ip_reader.country(ip)
