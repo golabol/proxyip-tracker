@@ -129,7 +129,7 @@ def save_to_file(content, output_file):
 
 def get_country_based_ips():
     global added_ips
-    location_ips_data = {}
+    location_ips_data = []
     base_url = 'https://cfip.ashrvpn.v6.army/?country='
     for con in countries:
         try:
