@@ -211,7 +211,7 @@ class CloudflareIPTester:
 
     #     return None
 
-    def get_country_from_ip(self, ip: str, geo_db_path: str) -> Optional[str]:
+    def get_country_from_ip(self, ip: str, geoip) -> Optional[str]:
         """
         Fetch the colo code for a given IP address.
 
@@ -219,8 +219,6 @@ class CloudflareIPTester:
         :return: Colo code or None
         """
         try:
-            geoip = GeoIP2Fast()
-            geoip = GeoIP2Fast(geoip2fast_data_file=geo_db_path)
             if geo_data := geoip.lookup(ip):
                 return geo_data.country_code, geo_data.country_name, geo_data.asn_name
             # with geoip2.database.Reader('./Country.mmdb') as ip_reader:
@@ -341,7 +339,7 @@ class CloudflareIPTester:
         except requests.RequestException:
             return 0.0
 
-    def map_ips_to_regions(self, ip_list: List[str], geo_db_path: str) -> Dict[str, List[str]]:
+    def map_ips_to_regions(self, ip_list: List[str], geoip) -> Dict[str, List[str]]:
         """
         Map IPs to their corresponding regions using multithreading.
 
@@ -360,7 +358,7 @@ class CloudflareIPTester:
             # colo = self.get_colo_from_ip(ip)
             
             # region = self.get_region_from_colo(colo, colo_data)
-            colo, region, asn_name = self.get_country_from_ip(ip, geo_db_path)
+            colo, region, asn_name = self.get_country_from_ip(ip, geoip)
             if not colo:
                 return None, None
             logging.info(f"IP: {ip}; Colo: {colo}; Region: {region}; ASN Name: {asn_name}")
@@ -433,10 +431,11 @@ class CloudflareIPTester:
         geoip = GeoIP2Fast()
         update_result = geoip.update_file('geoip2fast-city-asn.dat.gz',verbose=False)
         geo_db_path = update_result.get('file_destination')
+        geoip = GeoIP2Fast(geoip2fast_data_file=geo_db_path)
 
         # Get map of corresponding region for each ip
         logging.info("Getting region for each IPs.")
-        ip_region_map, ip_to_asn_name_map = self.map_ips_to_regions(ip_list, geo_db_path)
+        ip_region_map, ip_to_asn_name_map = self.map_ips_to_regions(ip_list, geoip)
         if not ip_region_map:
             raise RuntimeError("Can not get regions of IPs")
 
